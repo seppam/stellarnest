@@ -1,0 +1,105 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #faf8ff;
+    color: #131b2e;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #f2f3ff;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #c4c5da;
+    border-radius: 3px;
+  }
+
+  /* Numeric input without spinners */
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+
+  /* Range slider styling */
+  input[type='range'] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 8px;
+    border-radius: 9999px;
+    background: #e2e7ff;
+    outline: none;
+  }
+  input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #0047ff;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 71, 255, 0.3);
+  }
+  input[type='range']::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #0047ff;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 6px rgba(0, 71, 255, 0.3);
+  }
+}
+
+@layer components {
+  /* Glassmorphism card */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  /* Bottom sheet overlay */
+  .bottom-sheet-overlay {
+    @apply fixed inset-0 bg-black/40 z-40 transition-opacity;
+  }
+
+  /* Bottom sheet */
+  .bottom-sheet {
+    @apply fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-lg p-6 pb-10 transition-transform duration-300;
+  }
+
+  /* Active scale effect for buttons */
+  .press-effect {
+    @apply transition-transform active:scale-95;
+  }
+
+  /* Bottom nav item */
+  .nav-item {
+    @apply flex flex-col items-center justify-center text-on-surface-variant;
+  }
+  .nav-item.active {
+    @apply bg-secondary-container text-on-secondary-container rounded-full px-4 py-1;
+  }
+}
