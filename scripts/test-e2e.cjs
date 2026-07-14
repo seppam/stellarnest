@@ -4,7 +4,7 @@
  * Run: node scripts/test-e2e.cjs
  */
 const { chromium } = require('playwright');
-const BASE = 'http://127.0.0.1:5173';
+const BASE = 'http://localhost:5173';
 
 async function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 

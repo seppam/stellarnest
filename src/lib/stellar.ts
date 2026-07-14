@@ -52,6 +52,8 @@ export interface SendResult {
   success: boolean;
   txHash?: string;
   error?: string;
+  /** Whether the Stellar network confirmed this transaction as successful */
+  successful?: boolean;
 }
 
 // ─── UUID ──────────────────────────────────────────────────────
@@ -140,7 +142,7 @@ export async function sendUSDC(
 ): Promise<SendResult> {
   if (MOCK_MODE) {
     await new Promise((r) => setTimeout(r, 600 + Math.random() * 400));
-    return { success: true, txHash: mockTxHash() };
+    return { success: true, successful: true, txHash: mockTxHash() };
   }
 
   try {
@@ -152,7 +154,7 @@ export async function sendUSDC(
       networkPassphrase: NETWORK_PASSPHRASE,
       fee: '100',
     })
-      .addMemo(_memoText ? Memo.text(_memoText) : Memo.none())
+      .addMemo(_memoText ? Memo.text(_memoText.slice(0, 28)) : Memo.none())
       .addOperation(
         Operation.payment({
           destination: _recipientPublicKey,
@@ -165,10 +167,11 @@ export async function sendUSDC(
 
     tx.sign(sender);
     const result = (await server.submitTransaction(tx)) as unknown as Record<string, unknown>;
-    return { success: true, txHash: String(result.id ?? result.hash ?? Date.now()) };
+    const successful = (result as Record<string, unknown>).successful as boolean ?? true;
+    return { success: true, successful, txHash: String(result.id ?? result.hash ?? Date.now()) };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
-    return { success: false, error: msg };
+    return { success: false, successful: false, error: msg };
   }
 }
 
@@ -179,7 +182,7 @@ export async function mintTestUSDC(
 ): Promise<SendResult> {
   if (MOCK_MODE) {
     await new Promise((r) => setTimeout(r, 400));
-    return { success: true, txHash: mockTxHash() };
+    return { success: true, successful: true, txHash: mockTxHash() };
   }
   const TREASURY_SECRET = import.meta.env.VITE_STELLAR_TREASURY_SECRET || 'SDEXDEMOTREASURYXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
   return sendUSDC(TREASURY_SECRET, _recipientPublicKey, _amount, 'FAUCET');

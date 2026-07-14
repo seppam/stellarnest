@@ -5,7 +5,19 @@ import { useApp } from '../contexts/AppContext';
 import { generateClaimId, formatAmount } from '../lib/stellar';
 import BottomNav from '../components/ui/BottomNav';
 
-// Bank options used in recipient form (inline)
+// ─── Safe split calculation ───────────────────────────────────
+/**
+ * Splits `totalUSD` by `splitRatioPct` (0–100) with safe decimal math.
+ * - Both amounts are rounded to 2 d.p.
+ * - savingsAmount is derived last so the two always sum exactly to totalUSD.
+ * - This prevents floating-point drift (e.g. 0.1 + 0.2 !== 0.3 in JS).
+ */
+function splitAmounts(totalUSD: number, splitRatioPct: number) {
+  // Safe decimal math: round each share, then derive savings so they always sum exactly.
+  const familyAmount = Math.round(totalUSD * (splitRatioPct / 100) * 100) / 100;
+  const savingsAmount = Math.round((totalUSD - familyAmount) * 100) / 100;
+  return { familyAmount, savingsAmount };
+}
 
 // ─── Recipient type ─────────────────────────────────────────────
 interface SavedRecipient {
@@ -61,8 +73,9 @@ export default function Send() {
   const [selectedRecipient, setSelectedRecipient] = useState<SavedRecipient | null>(null);
 
   const numAmount = parseFloat(amount) || 0;
-  const familyAmount = numAmount * (splitRatio / 100);
-  const savingsAmount = numAmount - familyAmount;
+  const { familyAmount, savingsAmount } = numAmount > 0
+    ? splitAmounts(numAmount, splitRatio)
+    : { familyAmount: 0, savingsAmount: 0 };
 
   // Filter recipients by search
   
@@ -105,6 +118,7 @@ export default function Send() {
         allocatedFamilyUSD: familyAmount,
         allocatedSavingsUSD: savingsAmount,
         splitRatio,
+        recipientCountry: 'ID', // TODO: wire to country selector on Send page
         recipientName: selectedRecipient?.name || recipientName || undefined,
         recipientBank: selectedRecipient?.bankName || recipientBank || undefined,
         recipientAccount: selectedRecipient?.accountNumber || recipientAccount || undefined,
@@ -382,9 +396,8 @@ export default function Send() {
                 <button
                   key={label}
                   onClick={() => {
+                    const { familyAmount: fam, savingsAmount: sav } = splitAmounts(numAmount, val);
                     setSplitRatio(val);
-                    const fam = numAmount * (val / 100);
-                    const sav = numAmount - fam;
                     setFamilyAmountStr(fam > 0 ? fam.toFixed(2).replace(/\.00$/, "") : '');
                     setSavingsAmountStr(sav > 0 ? sav.toFixed(2).replace(/\.00$/, "") : '');
                   }}

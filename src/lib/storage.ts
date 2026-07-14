@@ -164,6 +164,7 @@ export function seedDemoData(): void {
     allocatedFamilyUSD: 175,
     allocatedSavingsUSD: 75,
     splitRatio: 70,
+    recipientCountry: 'ID',
     isClaimed: false,
     createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     expiresAt: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),

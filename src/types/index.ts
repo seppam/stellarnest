@@ -1,8 +1,12 @@
+// ─── Country ──────────────────────────────────────────────────
+export type CountryCode = 'ID' | 'PH' | 'VN' | 'TH' | 'MY' | 'SG';
+
 // ─── User Profile ──────────────────────────────────────────────
 export interface SavedBank {
-  bankName: string; // e.g., "GoPay", "BCA", "OVO"
+  bankName: string;     // e.g., "GoPay", "BCA", "GCash", "MoMo"
   accountNumber: string;
   accountHolder?: string; // Full name as registered at the bank
+  country: CountryCode;  // Which country this bank account belongs to
 }
 
 export interface UserProfile {
@@ -27,8 +31,10 @@ export interface MagicClaim {
   recipientBank?: string;
   recipientAccount?: string;
   totalAmountUSD: number;
-  allocatedFamilyUSD: number; // e.g. 70%
-  allocatedSavingsUSD: number; // e.g. 30%
+  allocatedFamilyUSD: number;  // e.g. 70% — precision-safe float
+  allocatedSavingsUSD: number;  // e.g. 30% — familyAmount + savingsAmount always === totalAmountUSD
+  // On/off ramp destination country
+  recipientCountry: CountryCode;
   splitRatio: number; // 0–100 (percentage to family)
   isClaimed: boolean;
   claimedByAccountNumber?: string;

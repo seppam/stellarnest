@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, Globe } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { formatAmount } from '../lib/stellar';
-import type { MagicClaim } from '../types';
+import { getCountryConfig, formatLocal } from '../lib/regional';
+import type { MagicClaim, CountryCode } from '../types';
 
 export default function Withdraw() {
   const { id } = useParams<{ id: string }>();
@@ -17,9 +18,13 @@ export default function Withdraw() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [country, setCountry] = useState<CountryCode>('ID');
 
-  // Load claim on mount
+  // Load claim + restore country from session on mount
   useEffect(() => {
+    const savedCountry = sessionStorage.getItem('stellarnest_recipient_country') as CountryCode | null;
+    if (savedCountry) setCountry(savedCountry);
+
     if (id) {
       getClaim(id).then((found) => {
         setClaim(found);
@@ -31,6 +36,8 @@ export default function Withdraw() {
     }
   }, [id, getClaim]);
 
+  const countryConfig = getCountryConfig(country);
+
   const handleWithdraw = async () => {
     if (!claim || !bankName || !accountNumber) {
       setError('Please fill in all fields.');
@@ -40,18 +47,41 @@ export default function Withdraw() {
     setIsSubmitting(true);
     setError('');
 
+    // Read balance BEFORE the transfer (used in catch block for success detection)
+    const userBeforeStr = localStorage.getItem('stellarnest_user');
+    const userBeforeObj = userBeforeStr ? JSON.parse(userBeforeStr) : {};
+    const balanceBefore = userBeforeObj.emergencyFundBalanceUSD ?? 0;
+    const claimAmount = claim?.allocatedFamilyUSD ?? 0;
+    console.log(`[Withdraw] handleSubmit — claimAmount=${claimAmount}, balanceBefore=${balanceBefore}, claimId=${id}`);
+
     try {
       // claimFunds now takes: firestoreId, claimId, bankAccount, bankName
-      await claimFunds(
+      const cfResult = await claimFunds(
         (claim as any).firestoreId || id || '',
         id || '',
         accountNumber,
         bankName
       );
+      console.log(`[Withdraw] claimFunds resolved successfully, cfResult=`, cfResult);
       setSuccess(true);
     } catch (err) {
-      console.error('[Withdraw] claimFunds failed:', err);
-      setError('Failed to claim funds. Please try again.');
+      console.error(`[Withdraw] claimFunds THREW: ${err}`);
+      // Check localStorage claim status — if isClaimed=true, Stellar tx DID succeed
+      let claimIsClaimed = false;
+      try {
+        const claims = JSON.parse(localStorage.getItem('stellarnest_claims') || '[]');
+        const found = claims.find((c: any) => c.claimId === id);
+        claimIsClaimed = !!(found && found.isClaimed);
+        console.log(`[Withdraw] claim in storage: isClaimed=${claimIsClaimed}, amount=${found?.allocatedFamilyUSD}`);
+      } catch (e) { console.error('[Withdraw] storage read error:', e); }
+
+      if (claimIsClaimed) {
+        console.warn('[Withdraw] Transfer succeeded (isClaimed=true):', err);
+        setSuccess(true);
+      } else {
+        console.error('[Withdraw] Transfer FAILED: isClaimed=false, balanceBefore=' + balanceBefore);
+        setError('Failed to claim funds. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -116,39 +146,100 @@ export default function Withdraw() {
       <div className="bg-surface-container-low rounded-2xl p-4 mb-6 flex justify-between items-center">
         <div>
           <p className="text-[11px] text-on-surface-variant font-medium">You receive</p>
-          <p className="text-[20px] font-bold text-primary">{formatAmount(claim.allocatedFamilyUSD)}</p>
+          <p className="text-[20px] font-bold text-primary">
+            {formatAmount(claim.allocatedFamilyUSD)}
+            <span className="text-[13px] font-normal text-primary/70 ml-1">
+              ≈ {formatLocal(claim.allocatedFamilyUSD, country)}
+            </span>
+          </p>
         </div>
         <div className="text-right">
-          <p className="text-[11px] text-on-surface-variant font-medium">From</p>
-          <p className="text-sm font-semibold text-on-surface">{claim.senderName}</p>
+          <p className="text-[11px] text-on-surface-variant font-medium">Settlement via</p>
+          <p className="text-sm font-semibold text-on-surface">{countryConfig.settlementRails[0]}</p>
         </div>
       </div>
 
-      {/* Bank Selection */}
+      {/* Bank Selection — dynamically driven by selected country */}
       <div className="mb-4">
-        <label className="block text-[12px] font-semibold uppercase tracking-wide text-on-surface-variant mb-2">
-          Bank / E-Wallet
-        </label>
-        <div className="relative">
-          <select
-            value={bankName}
-            onChange={(e) => setBankName(e.target.value)}
-            className="w-full bg-surface-container-low border border-outline-variant rounded-xl p-4 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary pr-10"
-          >
-            <option value="">-- Select Bank / E-Wallet --</option>
-            <optgroup label="E-Wallets">
-              {['GoPay', 'OVO', 'DANA', 'LinkAja'].map((b) => (
-                <option key={b} value={b}>{b}</option>
-              ))}
-            </optgroup>
-            <optgroup label="Banks">
-              {['BCA', 'BNI', 'Mandiri', 'BRI', 'BSI'].map((b) => (
-                <option key={b} value={b}>{b}</option>
-              ))}
-            </optgroup>
-          </select>
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">▾</span>
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-[12px] font-semibold uppercase tracking-wide text-on-surface-variant">
+            Bank / E-Wallet
+          </label>
+          <div className="flex items-center gap-1 text-[11px] text-on-surface-variant">
+            <Globe size={11} />
+            <span>{countryConfig.flag} {countryConfig.name}</span>
+          </div>
         </div>
+
+        {/* E-wallets section */}
+        {countryConfig.paymentRails.some((r) => r.type === 'ewallet') && (
+          <div className="mb-2">
+            <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wide mb-1.5">E-Wallets</p>
+            <div className="flex flex-wrap gap-2">
+              {countryConfig.paymentRails
+                .filter((r) => r.type === 'ewallet')
+                .map((rail) => (
+                  <button
+                    key={rail.id}
+                    onClick={() => { setBankName(rail.label); setAccountNumber(''); }}
+                    className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                      bankName === rail.label
+                        ? 'bg-primary text-white border-primary shadow-sm'
+                        : 'bg-white border-outline-variant text-on-surface hover:border-primary'
+                    }`}
+                  >
+                    {rail.label}
+                  </button>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* Banks section */}
+        {countryConfig.paymentRails.some((r) => r.type === 'bank') && (
+          <div>
+            <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wide mb-1.5">Banks</p>
+            <div className="relative">
+              <select
+                value={bankName}
+                onChange={(e) => { setBankName(e.target.value); setAccountNumber(''); }}
+                className="w-full bg-surface-container-low border border-outline-variant rounded-xl p-4 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary pr-10"
+              >
+                <option value="">-- Select Bank --</option>
+                {countryConfig.paymentRails
+                  .filter((r) => r.type === 'bank')
+                  .map((rail) => (
+                    <option key={rail.id} value={rail.label}>{rail.label}</option>
+                  ))}
+              </select>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant text-xs">▾</span>
+            </div>
+          </div>
+        )}
+
+        {/* Mobile money (Vietnam) */}
+        {countryConfig.paymentRails.some((r) => r.type === 'mobile_money') && (
+          <div className="mt-2">
+            <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wide mb-1.5">Mobile Money</p>
+            <div className="flex flex-wrap gap-2">
+              {countryConfig.paymentRails
+                .filter((r) => r.type === 'mobile_money')
+                .map((rail) => (
+                  <button
+                    key={rail.id}
+                    onClick={() => { setBankName(rail.label); setAccountNumber(''); }}
+                    className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                      bankName === rail.label
+                        ? 'bg-primary text-white border-primary shadow-sm'
+                        : 'bg-white border-outline-variant text-on-surface hover:border-primary'
+                    }`}
+                  >
+                    {rail.label}
+                  </button>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Account Number */}
@@ -161,9 +252,8 @@ export default function Withdraw() {
           value={accountNumber}
           onChange={(e) => setAccountNumber(e.target.value)}
           placeholder={
-            ['GoPay', 'OVO', 'DANA'].includes(bankName)
-              ? '08xxxxxxxxxx'
-              : 'Enter account number'
+            countryConfig.paymentRails.find((r) => r.label === bankName)?.accountHint
+              ?? 'Enter account / phone number'
           }
           className="w-full bg-surface-container-low border border-outline-variant rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
         />

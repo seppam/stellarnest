@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { formatAmount } from '../lib/stellar';
-import type { MagicClaim } from '../types';
+import { COUNTRY_CODES, getCountryConfig, formatLocal } from '../lib/regional';
+import type { MagicClaim, CountryCode } from '../types';
 
 export default function Claim() {
   const { id } = useParams<{ id: string }>();
@@ -14,6 +15,7 @@ export default function Claim() {
   const [isLoading, setIsLoading] = useState(true);
   const [name, setName] = useState('');
   const [nameError, setNameError] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState<CountryCode>('ID');
 
   // Load claim asynchronously on mount
   useEffect(() => {
@@ -34,8 +36,9 @@ export default function Claim() {
       return;
     }
     setNameError('');
-    // Store name in sessionStorage so Withdraw page can access it
+    // Persist for Withdraw page
     sessionStorage.setItem('stellarnest_claimer_name', name.trim());
+    sessionStorage.setItem('stellarnest_recipient_country', selectedCountry);
     navigate(`/claim/${id}/withdraw`);
   };
 
@@ -108,7 +111,39 @@ export default function Claim() {
         <p className="text-[36px] font-bold leading-none mb-1">
           {formatAmount(claim.allocatedFamilyUSD)}
         </p>
-        <p className="text-sm opacity-80">from {claim.senderName || 'Someone'}</p>
+        <p className="text-[13px] opacity-80">
+          ≈ {formatLocal(claim.allocatedFamilyUSD, selectedCountry)} · from {claim.senderName || 'Someone'}
+        </p>
+      </div>
+
+      {/* Country Selector */}
+      <div className="bg-surface-container-low rounded-2xl p-4 mb-4">
+        <label className="block text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant mb-2">
+          Cash-out Country
+        </label>
+        <div className="flex gap-2 flex-wrap">
+          {COUNTRY_CODES.map((code) => {
+            const cfg = getCountryConfig(code);
+            return (
+              <button
+                key={code}
+                onClick={() => setSelectedCountry(code)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
+                  selectedCountry === code
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'bg-white border border-outline-variant text-on-surface hover:border-primary'
+                }`}
+              >
+                <span>{cfg.flag}</span>
+                <span>{cfg.name}</span>
+                <span className="text-[10px] opacity-60">{cfg.currency.code}</span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-[11px] text-on-surface-variant mt-2">
+          Settles via {getCountryConfig(selectedCountry).settlementRails.join(', ')}
+        </p>
       </div>
 
       {/* Details */}

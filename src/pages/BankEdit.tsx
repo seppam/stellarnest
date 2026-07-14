@@ -23,6 +23,7 @@ export default function BankEdit() {
         bankName,
         accountNumber,
         accountHolder: accountHolder || user?.name || '',
+        country: (user?.savedLocalBank?.country as any) || 'ID',
       },
     });
 
