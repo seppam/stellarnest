@@ -512,10 +512,10 @@ async function slide3(pres, icons) {
       x: f.x + 0.15, y: cy + 1.0, w: cw - 0.3, h: 0.4,
       fontSize: 13, bold: true, color: C.white, margin: 0,
     });
-    // Body
+    // Body — dark text for readability on light card bg
     slide.addText(f.body, {
       x: f.x + 0.15, y: cy + 1.38, w: cw - 0.3, h: 0.95,
-      fontSize: 10, color: C.lightgray, margin: 0,
+      fontSize: 10, color: C.bodytext, margin: 0,
     });
   });
 
@@ -1220,7 +1220,7 @@ async function slide8(pres, icons) {
     // Body
     slide.addText(s.body, {
       x: sx + 0.1, y: sy + 1.28, w: cw - 0.2, h: 0.35,
-      fontSize: 7.5, color: C.lightgray, align: 'center', margin: 0,
+      fontSize: 8, color: C.offwhite, align: 'center', margin: 0,
     });
     // Sub
     slide.addText(s.sub, {
@@ -1467,7 +1467,7 @@ async function slide10(pres, icons) {
       });
       slide.addText(item, {
         x: px + 0.28, y: p.y + 0.55 + j * 0.6, w: pw - 0.38, h: 0.5,
-        fontSize: 9, color: C.lightgray, margin: 0,
+        fontSize: 9, color: C.darktext, margin: 0,
       });
     });
 
