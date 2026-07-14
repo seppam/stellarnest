@@ -1,12 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ShieldCheck, Zap, Users } from 'lucide-react';
-import { useApp } from '../contexts/AppContext';
 
 const FEATURES = [
   {
     icon: Zap,
     title: 'Instant Settlement',
-    desc: '3-5 second finality. No more waiting 3 business days.',
+    desc: '3–5 second finality. No more waiting 3 business days.',
     color: 'bg-amber-100 text-amber-600',
   },
   {
@@ -24,27 +23,18 @@ const FEATURES = [
 ];
 
 export default function Landing() {
-  const { user } = useApp();
   const navigate = useNavigate();
 
   const handleGetStarted = () => {
-    // Internet banking flow: visit bank → login/signup → dashboard
+    // Internet banking flow: visit bank → sign up / sign in → dashboard
     navigate('/auth');
   };
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Header */}
+      {/* Header — brand only, no nav links */}
       <header className="flex justify-between items-center px-5 pt-6 pb-4 max-w-lg mx-auto w-full">
         <span className="text-[20px] font-bold text-primary tracking-tight">StellarNest</span>
-        {user && (
-          <button
-            onClick={() => navigate('/auth')}
-            className="text-sm font-semibold text-primary"
-          >
-            Dashboard →
-          </button>
-        )}
       </header>
 
       {/* Hero */}
@@ -80,9 +70,6 @@ export default function Landing() {
           <ArrowRight size={20} />
         </button>
       </div>
-
-      {/* Bottom padding for mobile nav if signed in */}
-      {user && <div className="h-24" />}
     </div>
   );
 }
