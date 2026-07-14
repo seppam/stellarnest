@@ -111,8 +111,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setTransactions(getTransactions());
       }
 
-      // Step 2: Listen to Firebase Auth state
+      // Step 2: Listen to Firebase Auth state (4s timeout fallback for offline/no-network)
+      const authTimeout = setTimeout(() => {
+        console.warn('[AppContext] Firebase auth timed out — proceeding without auth');
+        setIsLoading(false);
+      }, 4000);
+
       const unsubscribe = onAuthChange(async (firebaseUser) => {
+        clearTimeout(authTimeout);
         if (firebaseUser) {
           // Step 3: Sync user profile from Firestore (source of truth)
           try {
@@ -153,8 +159,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             console.warn('[AppContext] Firestore sync failed, using local cache:', err);
           }
         } else {
-          // No Firebase user — seed a demo user if none exists, then restore from cache
-          seedDemoData();
+          // No Firebase user — check if demo mode is requested via URL param
+          // Internet banking flow: landing → /auth → signup/login → dashboard
+          // Demo mode (hackathon): landing → Get Started → /dashboard with seed data
+          const url = new URL(window.location.href);
+          if (url.searchParams.get('demo') === '1' || sessionStorage.getItem('__stellarnest_autofill_demo__') === '1') {
+            sessionStorage.removeItem('__stellarnest_autofill_demo__');
+            seedDemoData();
+          }
           setUser(getCachedUser());
           setClaims(getClaims());
           setTransactions(getTransactions());
@@ -162,7 +174,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       });
 
-      return unsubscribe;
+      return () => { clearTimeout(authTimeout); unsubscribe(); };
     };
 
     const cleanup = bootstrap();

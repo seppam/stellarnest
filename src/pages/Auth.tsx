@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { signUp, signIn, sendPasswordReset } from '../lib/services/auth.service';
@@ -7,8 +7,13 @@ import { signUp, signIn, sendPasswordReset } from '../lib/services/auth.service'
 type AuthMode = 'signin' | 'signup';
 
 export default function Auth() {
-  const { signIn: localSignIn } = useApp();
+  const { signIn: localSignIn, user } = useApp();
   const navigate = useNavigate();
+
+  // Already logged in — send to dashboard (internet banking standard)
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const [mode, setMode] = useState<AuthMode>('signin');
   const [name, setName] = useState('');

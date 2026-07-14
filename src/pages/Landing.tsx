@@ -28,11 +28,8 @@ export default function Landing() {
   const navigate = useNavigate();
 
   const handleGetStarted = () => {
-    if (user) {
-      navigate('/dashboard');
-    } else {
-      navigate('/auth');
-    }
+    // Internet banking flow: visit bank → login/signup → dashboard
+    navigate('/auth');
   };
 
   return (
@@ -42,7 +39,7 @@ export default function Landing() {
         <span className="text-[20px] font-bold text-primary tracking-tight">StellarNest</span>
         {user && (
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/auth')}
             className="text-sm font-semibold text-primary"
           >
             Dashboard →

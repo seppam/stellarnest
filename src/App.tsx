@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './contexts/AppContext';
 import Landing from './pages/Landing';
@@ -15,8 +16,20 @@ import Profile from './pages/Profile';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useApp();
+  const [authFailed, setAuthFailed] = useState(false);
 
-  if (isLoading) {
+  // Firebase unreachable / network offline: hard-redirect after 3s so we never
+  // get stuck on a spinner or accidentally show the dashboard to unauthenticated users
+  useEffect(() => {
+    if (isLoading) {
+      const timer = setTimeout(() => setAuthFailed(true), 3000);
+      return () => clearTimeout(timer);
+    } else {
+      setAuthFailed(false);
+    }
+  }, [isLoading]);
+
+  if (isLoading && !authFailed) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -32,12 +45,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AppRoutes() {
-  const { user } = useApp();
-
   return (
     <Routes>
-      {/* Public */}
-      <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Landing />} />
+      {/* Public — always show landing. Get Started → /dashboard (seeds demo data) */}
+      <Route path="/" element={<Landing />} />
       <Route path="/auth" element={<Auth />} />
 
       {/* Protected — App Shell */}
