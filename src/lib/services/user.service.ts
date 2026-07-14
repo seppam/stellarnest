@@ -96,10 +96,12 @@ export async function updateUserProfile(
   updates: Partial<Omit<CloudUserProfile, 'uid' | 'createdAt'>>
 ): Promise<void> {
   try {
-    await updateDoc(doc(db, USERS_COL, uid), {
+    // Use setDoc with merge=true so it works for both new users (first sign-up)
+    // and existing users (profile updates) — avoids "No document to update" errors
+    await setDoc(doc(db, USERS_COL, uid), {
       ...updates,
       updatedAt: serverTimestamp(),
-    });
+    }, { merge: true });
   } catch (err) {
     console.warn('[UserService] updateUserProfile failed (non-critical):', err);
   }
@@ -121,10 +123,11 @@ export async function storeEncryptedSecret(
   encryptedSecret: string
 ): Promise<void> {
   try {
-    await updateDoc(doc(db, USERS_COL, uid), {
+    // Use setDoc with merge=true so it works for brand-new users with no Firestore document yet
+    await setDoc(doc(db, USERS_COL, uid), {
       encryptedSecret,
       updatedAt: serverTimestamp(),
-    });
+    }, { merge: true });
   } catch (err) {
     console.error('[UserService] storeEncryptedSecret failed:', err);
     throw err;

@@ -10,11 +10,7 @@ export default function Auth() {
   const { signIn: localSignIn, user } = useApp();
   const navigate = useNavigate();
 
-  // Already logged in — send to dashboard (internet banking standard)
-  if (user) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
+  // ── All hooks must be called on every render (Rules of Hooks) ──
   const [mode, setMode] = useState<AuthMode>('signin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -22,6 +18,11 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Already logged in — redirect AFTER hooks (Rules of Hooks)
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
