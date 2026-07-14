@@ -80,17 +80,14 @@ const AppContext = createContext<AppContextValue | null>(null);
 
 // ─── Provider ────────────────────────────────────────────────────
 
-// Synchronous initializer — ensures a demo user exists in localStorage
-// BEFORE the first React render, eliminating the null-flash on first load.
-function getOrCreateDemoUser(): UserProfile | null {
-  const cached = getCachedUser();
-  if (cached) return cached;
-  seedDemoData();
+// Initializer — restore cached user from localStorage (no demo auto-seed).
+// Demo mode is opt-in via ?demo=1 URL param, triggered explicitly by user action.
+function getInitialUser(): UserProfile | null {
   return getCachedUser();
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserProfile | null>(getOrCreateDemoUser);
+  const [user, setUser] = useState<UserProfile | null>(getInitialUser);
   const [claims, setClaims] = useState<MagicClaim[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
