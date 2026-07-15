@@ -89,12 +89,14 @@ export default function Send() {
 
   const handleSaveNewRecipient = () => {
     if (!recipientName || !recipientAccount) return;
-    saveRecipient({
+    const newRecipient = {
       id: `rec_${Date.now()}`,
       name: recipientName,
       bankName: recipientBank,
       accountNumber: recipientAccount,
-    });
+    };
+    saveRecipient(newRecipient);
+    setSelectedRecipient(newRecipient);
   };
 
   const handleGenerateLink = async () => {
@@ -527,7 +529,10 @@ export default function Send() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => setShowRecipientPicker(false)}
+                  onClick={() => {
+                    handleSaveNewRecipient();
+                    setShowRecipientPicker(false);
+                  }}
                   disabled={!recipientName || !recipientBank || !recipientAccount}
                   className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-primary press-effect disabled:opacity-40"
                 >
