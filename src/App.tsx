@@ -18,11 +18,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useApp();
   const [authFailed, setAuthFailed] = useState(false);
 
-  // Firebase unreachable / network offline: hard-redirect after 3s so we never
-  // get stuck on a spinner or accidentally show the dashboard to unauthenticated users
+  // Give Firebase Auth enough time to restore the session on page reload.
+  // AppContext waits up to 4s for Firebase — give it 7s before assuming auth failed.
+  // On a real network with active Firebase session, auth restores in ~1-2s.
   useEffect(() => {
     if (isLoading) {
-      const timer = setTimeout(() => setAuthFailed(true), 3000);
+      const timer = setTimeout(() => setAuthFailed(true), 7000);
       return () => clearTimeout(timer);
     } else {
       setAuthFailed(false);
