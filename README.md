@@ -173,6 +173,41 @@ StellarNest/
 
 ---
 
+## 📸 Screenshots
+
+Captured from a local run in demo mode (seeded sample data, placeholder Firebase config, no real backend). The
+hosted demo is offline, so these are the reference visuals.
+
+| | |
+|---|---|
+| ![Landing](docs/screenshots/01-landing.webp) **Landing** | ![Dashboard](docs/screenshots/02-dashboard.webp) **Dashboard** (seeded demo user) |
+| ![Send](docs/screenshots/03-send.webp) **Send** with 70/30 split-routing | ![History](docs/screenshots/04-history.webp) **History** |
+| ![Insights](docs/screenshots/05-insights.webp) **Insights** and Proof of Income | ![Mobile](docs/screenshots/06-dashboard-mobile.webp) **Dashboard, 390px mobile** |
+
+---
+
+## 🚀 Run locally (no Firebase or Stellar account needed)
+
+The app has a built-in demo mode: opening `/dashboard?demo=1` seeds a local demo user and sample
+transactions into `localStorage`, and `VITE_MOCK_MODE=true` mocks all Stellar calls. Placeholder
+Firebase values are enough to render every screen shown above. Verified with Node 22+, npm 10+.
+
+```bash
+npm ci
+VITE_FIREBASE_API_KEY=demo VITE_FIREBASE_AUTH_DOMAIN=demo.invalid \
+VITE_FIREBASE_PROJECT_ID=demo-stellarnest VITE_FIREBASE_STORAGE_BUCKET=demo.invalid \
+VITE_FIREBASE_MESSAGING_SENDER_ID=0 VITE_FIREBASE_APP_ID=demo VITE_MOCK_MODE=true \
+npm run dev -- --port 3201
+# open http://localhost:3201/dashboard?demo=1
+npm run lint && npm run build     # lint (warnings only) and production build
+```
+
+Limits: sign-up/sign-in, real Firestore sync and live testnet transactions need your own Firebase project and
+Stellar testnet setup (see Setup below). There are no unit tests; the Playwright scripts in `scripts/` target a
+live backend.
+
+---
+
 ## ⚙️ Setup & Configuration
 
 ### 1. Clone & install
@@ -194,12 +229,12 @@ cp .env.example .env.local
 
 ```bash
 # Firebase (from Firebase Console → Project Settings → General → Your apps)
-VITE_FIREBASE_API_KEY=AIzaSyDcBxr9dLJpUjpfncIhrPRBG93_4SyOazpF
-VITE_FIREBASE_AUTH_DOMAIN=stellarnest-hackathon.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=stellarnest-hackathon
-VITE_FIREBASE_STORAGE_BUCKET=stellarnest-hackathon.firebasestorage.app
-VITE_FIREBASE_MESSAGING_SENDER_ID=720324710177
-VITE_FIREBASE_APP_ID=1:720324710177:web:de7660823a8d7535f9b860
+VITE_FIREBASE_API_KEY=your_api_key_here
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
 
 # Stellar
 VITE_STELLAR_NETWORK=testnet        # or: public
