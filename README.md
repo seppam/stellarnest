@@ -5,7 +5,7 @@
 
 **Live demo: currently offline** (prototype; not submitted to the hackathon)
 **· [🐙 GitHub Repo](https://github.com/seppam/stellarnest)**
-**· [🏆 Built for the APAC Stellar Hackathon — July 2026 (prototype, not submitted)](https://www.risein.com/programs/apac-stellar-hackathon)**
+**· [Built for the APAC Stellar Hackathon — July 2026 (prototype, not submitted)](https://www.risein.com/programs/apac-stellar-hackathon)**
 
 [![Testnet](https://img.shields.io/badge/Network-Stellar%20Testnet-blue)](https://stellar.org)
 [![USDC](https://img.shields.io/badge/Asset-USDC%20on%20Testnet-green)](https://circle.com)
@@ -32,14 +32,14 @@ on-chain in a single Stellar transaction.
 
 | Feature | Status | Description |
 |---|---|---|
-| **Magic Claim Links** | ✅ Live | Generate a payment URL; recipient claims via bank/e-wallet |
-| **Split-Routing** | ✅ Live | 70/30 (or custom) split enforced on the Stellar ledger |
-| **Multi-Currency** | ✅ Live | IDR, PHP, VND, THB, MYR, SGD with live settlement rails |
-| **Stellar Wallet** | ✅ Live | AES-GCM encrypted secret storage, USDC on testnet |
-| **Proof of Income** | ✅ Live | Auto-generated, ledger-verifiable income statements |
-| **Insights Dashboard** | ✅ Live | YTD income, monthly charts, transaction history |
-| **Firebase Auth** | ✅ Live | Anonymous magic link authentication |
-| **Offline-First** | ✅ Live | localStorage cache; syncs to Firestore on reconnect |
+| **Magic Claim Links** | Implemented (testnet) | Generate a payment URL; recipient claims via bank/e-wallet |
+| **Split-Routing** | Implemented (testnet) | 70/30 (or custom) split enforced on the Stellar ledger |
+| **Multi-Currency** | Implemented (testnet) | IDR, PHP, VND, THB, MYR, SGD with simulated settlement rates (no live payout rails) |
+| **Stellar Wallet** | Implemented (testnet) | AES-GCM encrypted secret storage, USDC on testnet |
+| **Proof of Income** | Implemented (testnet) | Auto-generated, ledger-verifiable income statements |
+| **Insights Dashboard** | Implemented (testnet) | YTD income, monthly charts, transaction history |
+| **Firebase Auth** | Implemented (testnet) | Anonymous magic link authentication |
+| **Offline-First** | Implemented (testnet) | localStorage cache; syncs to Firestore on reconnect |
 | **Bank Payout (VA/QRIS)** | 🔜 Soon | Indonesian VA and QRIS withdrawal flow |
 | **Email Magic Link Delivery** | 🔜 Soon | Firebase Email Action handler for link delivery |
 | **React Native Mobile App** | 🔜 Soon | App Store + Play Store deployment |
