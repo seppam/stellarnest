@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import heroIllustration from '../assets/hero-illustration.svg';
 import { ArrowRight, ShieldCheck, Zap, Users } from 'lucide-react';
 
 const FEATURES = [
@@ -39,6 +40,13 @@ export default function Landing() {
 
       {/* Hero */}
       <div className="flex-1 flex flex-col justify-end px-5 pb-10 max-w-lg mx-auto w-full">
+        <img
+          src={heroIllustration}
+          alt="Two homes in different countries linked by a glowing payment arc"
+          width={400}
+          height={300}
+          className="w-full max-w-sm mx-auto mb-8 rounded-[28px] shadow-lg"
+        />
         <h1 className="text-[28px] font-bold leading-tight tracking-tight text-on-background mb-3">
           Send money home<br />instantly at zero cost.
         </h1>
