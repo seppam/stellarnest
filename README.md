@@ -3,9 +3,9 @@
 > Cross-border payment app for Indonesian migrant workers and freelancers,
 > built on the Stellar blockchain. Send money home — without a bank account, without high fees.
 
-**[🌐 Live App](<!-- TODO: Replace with your Vercel deployment URL, e.g. https://stellarnest.vercel.app -->)**
+**Live demo: currently offline** (prototype; not submitted to the hackathon)
 **· [🐙 GitHub Repo](https://github.com/seppam/stellarnest)**
-**· [🏆 APAC Stellar Hackathon — July 2026](https://www.risein.com/programs/apac-stellar-hackathon)**
+**· [🏆 Built for the APAC Stellar Hackathon — July 2026 (prototype, not submitted)](https://www.risein.com/programs/apac-stellar-hackathon)**
 
 [![Testnet](https://img.shields.io/badge/Network-Stellar%20Testnet-blue)](https://stellar.org)
 [![USDC](https://img.shields.io/badge/Asset-USDC%20on%20Testnet-green)](https://circle.com)
