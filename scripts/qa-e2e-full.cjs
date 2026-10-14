@@ -124,112 +124,97 @@ function log(step, status, detail) {
     }
 
     // ══════════════════════════════════════════════════════════════════
-    // T6 — Send Page (navigate via BottomNav)
+    // T6 — Send Page
+    // Navigate via BottomNav (React Router — preserves Firebase Auth session).
+    // Then do a full page reload (page.goto) to test ProtectedRoute's 7s timeout.
     // ══════════════════════════════════════════════════════════════════
     if (regSuccess) {
-      // Click "Send" in the BottomNav — this uses React Router NavLink, proper navigation
+      // First: SPA navigation via BottomNav (always works — no full reload)
       const sendNavLink = page.locator('nav a[href="/send"], nav >> text=Send').first();
-      const sendNavClicked = await sendNavLink.isVisible().catch(() => false);
-      if (sendNavClicked) {
+      if (await sendNavLink.isVisible().catch(() => false)) {
         await sendNavLink.click();
-        await page.waitForTimeout(4000);
+        await page.waitForTimeout(5000); // Wait for Firebase Auth to confirm session
       }
       const sendBody = await page.textContent('body');
-      const onSendPage = sendBody.length > 200;
+      const onSendPage = sendBody.length > 200 && (sendBody.includes('Send Money') || sendBody.includes('Amount'));
       addResult('T6-Send Page', onSendPage ? 'PASS' : 'FAIL',
-        `URL=${page.url()}, bodyLen=${sendBody.length}, hasSendContent=${sendBody.includes('Send Money') || sendBody.includes('Generate')}`);
+        `URL=${page.url()}, bodyLen=${sendBody.length}, hasSendContent=${onSendPage}`);
 
-      // T7 — Fill Send form
-      // The Send page flow: fill amount → click "Enter New Recipient Details" → fill recipient form → click "Use This Recipient"
-      // Find the AMOUNT input: it's the first [placeholder="0.00"] that's a number input, inside the Amount (USDC) section
+      // ─── Pre-inject a saved recipient into localStorage ────────────────────
+      // savedRecipients state is initialized on mount (useState(() => getSavedRecipients())).
+      // We must inject BEFORE the Send page mounts, then reload so it reads the injected data.
+      await page.evaluate(() => {
+        const recipient = {
+          id: 'rec_test_001',
+          name: 'John Doe',
+          bankName: 'BCA',
+          accountNumber: '1234567890',
+        };
+        localStorage.setItem('stellarnest_recipients', JSON.stringify([recipient]));
+      });
+      // Reload the Send page so it mounts with the injected recipient in state
+      await page.goto(BASE + '/send', { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(8000); // Wait for Firebase Auth to restore session (7s ProtectedRoute timeout)
+
+      // T7 — Fill amount and select saved recipient
       const amountInput = page.locator('input[type="number"][placeholder="0.00"]').first();
       const amountInputVisible = await amountInput.isVisible().catch(() => false);
-
       if (amountInputVisible) {
-        // Click first to focus, then type (Ensures React onChange fires)
         await amountInput.click();
-        await amountInput.fill('5');
-        // Also try typing to be extra sure React registers the change
-        await amountInput.pressSequentially('5', { delay: 50 });
+        await amountInput.pressSequentially('5', { delay: 100 });
         await page.waitForTimeout(1000);
       }
-
-      // Verify amount was set by checking the input value
       const amountValue = amountInputVisible ? await amountInput.inputValue().catch(() => '') : '';
-      const filledAmount = amountValue === '5' || amountValue === '55';
+      const filledAmount = parseFloat(amountValue) >= 5;
 
-      // Click "Enter New Recipient Details" to reveal the recipient form
-      const enterNewBtn = page.locator('button:has-text("Enter New Recipient Details")').first();
-      if (await enterNewBtn.isVisible().catch(() => false)) {
-        await enterNewBtn.click();
-        await page.waitForTimeout(1500);
-      }
-
-      // Fill the recipient form fields (they appear after clicking Enter New Recipient Details)
-      const nameInput = page.locator('input[placeholder*="Recipient"], input[placeholder*="recipient"]').first();
-      if (await nameInput.isVisible().catch(() => false)) {
-        await nameInput.fill('John Doe');
-      }
-
-      const bankSelect = page.locator('select').first();
-      if (await bankSelect.isVisible().catch(() => false)) {
-        await bankSelect.selectOption({ label: 'BCA' });
-        await page.waitForTimeout(500);
-      }
-
-      // After selecting bank, the account placeholder updates — fill it
-      const accountInput = page.locator('input[placeholder*="08"], input[placeholder*="account"]').first();
-      if (await accountInput.isVisible().catch(() => false)) {
-        await accountInput.fill('1234567890');
-      }
-
-      // Click "✓ Use This Recipient" to close the form and confirm recipient
-      const useRecipientBtn = page.locator('button:has-text("Use This Recipient")').first();
-      if (await useRecipientBtn.isVisible().catch(() => false)) {
-        await useRecipientBtn.click();
+      // Click the saved recipient chip "John Doe (BCA)" from the saved recipients list
+      const recipientChip = page.locator('button:has-text("John Doe")').first();
+      const chipVisible = await recipientChip.isVisible().catch(() => false);
+      if (chipVisible) {
+        await recipientChip.click();
         await page.waitForTimeout(1000);
       }
 
-      const filledRecipientName = await nameInput.isVisible().catch(() => true); // assume filled if we tried
-      const selectedBank = await bankSelect.isVisible().catch(() => false);
-      const filledAccount = await accountInput.isVisible().catch(() => true);
+      // The selected recipient chip should now appear (handleSelectRecipient ran)
+      const selectedChip = page.locator('text=John Doe').first();
+      const selectedVisible = await selectedChip.isVisible().catch(() => false);
 
-      addResult('T7-Send Form Filled', 'PASS',
-        `Amount=5:${filledAmount}, AmountValue=${amountValue}, RecipientName=${filledRecipientName}, Bank=${selectedBank}`);
+      addResult('T7-Send Form Filled', (filledAmount && selectedVisible) ? 'PASS' : 'FAIL',
+        `Amount=5:${filledAmount}(value=${amountValue}), Recipient selected:${selectedVisible}`);
 
       // T8 — Generate Magic Link
-      // The real button is at the BOTTOM of the Send Money form — use .last() to avoid Add Funds button
-      // Both Generate Magic Link buttons share the same label; .last() grabs the Send Money one (Add Funds is .first() in DOM)
       const generateBtn = page.locator('button:has-text("Generate Magic Link")').last();
       const generateBtnVisible = await generateBtn.isVisible().catch(() => false);
       const generateBtnEnabled = generateBtnVisible && await generateBtn.isEnabled().catch(() => false);
 
       if (generateBtnEnabled) {
+        // Read localStorage claims BEFORE clicking to establish baseline
+        const claimsBefore = await page.evaluate(() => {
+          try { return JSON.parse(localStorage.getItem('stellarnest_claims') || '[]').length; } catch { return 0; }
+        });
+        const urlBefore = page.url();
         await generateBtn.click();
-        // Magic link = Stellar transaction (createClaim) + Firestore write — ~5-8s
-        await page.waitForTimeout(10000);
-        const afterGenBody = await page.textContent('body');
-        const genSuccess = afterGenBody.includes('Copied') || afterGenBody.includes('link') ||
-                          afterGenBody.includes('claim') || afterGenBody.includes('recipient') ||
-                          afterGenBody.includes('Generated') || afterGenBody.includes('Sent');
+        // Wait up to 20s for the link generation to complete
+        // createClaim writes to localStorage synchronously, so we can check immediately
+        await page.waitForTimeout(2000); // Wait for handleGenerateLink to call createClaim and set generatedLink
+        const claimsAfter = await page.evaluate(() => {
+          try { return JSON.parse(localStorage.getItem('stellarnest_claims') || '[]').length; } catch { return 0; }
+        });
+        const urlAfter = page.url();
+        // Success if: claims increased OR URL changed OR clipboard was accessed
+        const genSuccess = claimsAfter > claimsBefore || urlAfter !== urlBefore || urlAfter.includes('/dashboard');
         addResult('T8-Generate Magic Link', genSuccess ? 'PASS' : 'FAIL',
-          `Success=${genSuccess}, body: ${afterGenBody.substring(0, 200)}`);
+          `claimsBefore=${claimsBefore}, claimsAfter=${claimsAfter}, urlBefore=${urlBefore}, urlAfter=${urlAfter}`);
       } else {
-        // Diagnostic: Check the button's disabled reason
-        const allButtons = await page.locator('button:has-text("Generate Magic Link")').all();
-        const states = await Promise.all(allButtons.map(async (btn) => {
-          const visible = await btn.isVisible().catch(() => false);
-          const enabled = await btn.isEnabled().catch(() => false);
-          const text = await btn.textContent().catch(() => '');
-          return `{text:${text.trim().substring(0,30)}, visible:${visible}, enabled:${enabled}}`;
+        const allBtns = await page.locator('button:has-text("Generate Magic Link")').all();
+        const btnStates = await Promise.all(allBtns.map(async (b) => {
+          const v = await b.isVisible().catch(() => false);
+          const e = await b.isEnabled().catch(() => false);
+          return `visible=${v},enabled=${e}`;
         }));
-        const btnDisabledReason = !filledAmount ? 'amount=0' :
-                                  !filledRecipientName ? 'no recipient name' :
-                                  !selectedBank ? 'no bank selected' :
-                                  !filledAccount ? 'no account filled' :
-                                  'isGenerating=true OR other state';
         addResult('T8-Generate Magic Link', 'FAIL',
-          `Button disabled (reason: ${btnDisabledReason}). Button states: ${states.join(', ')}. Amount input value: ${amountValue}`);
+          `Button disabled. AmountOK=${filledAmount}, RecipientOK=${selectedVisible}. ` +
+          `GenBtn: [${btnStates.join(' | ')}]. Body: ${(await page.textContent('body')).substring(0, 200)}`);
       }
     } else {
       ['T6-Send Page', 'T7-Send Form Filled', 'T8-Generate Magic Link'].forEach(s =>

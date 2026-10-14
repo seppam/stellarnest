@@ -73,6 +73,10 @@ export default function Send() {
   const [selectedRecipient, setSelectedRecipient] = useState<SavedRecipient | null>(null);
 
   const numAmount = parseFloat(amount) || 0;
+
+  // ─── Form validation ─────────────────────────────────────────
+  const hasRecipient = !!(selectedRecipient || (recipientName && recipientBank && recipientAccount));
+  const canGenerate = numAmount > 0 && hasRecipient && !isGenerating;
   const { familyAmount, savingsAmount } = numAmount > 0
     ? splitAmounts(numAmount, splitRatio)
     : { familyAmount: 0, savingsAmount: 0 };
@@ -479,7 +483,7 @@ export default function Send() {
                 type="text"
                 value={recipientName}
                 onChange={(e) => setRecipientName(e.target.value)}
-                placeholder="Recipient Name"
+                placeholder="Recipient Name *"
                 className="w-full bg-surface-container-low border border-outline-variant rounded-xl p-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
 
@@ -489,7 +493,7 @@ export default function Send() {
                   onChange={(e) => setRecipientBank(e.target.value)}
                   className="w-full bg-surface-container-low border border-outline-variant rounded-xl p-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer pr-10"
                 >
-                  <option value="">-- Select Bank / E-Wallet --</option>
+                  <option value="">-- Select Bank / E-Wallet * --</option>
                   <optgroup label="E-Wallets">
                     {['GoPay', 'OVO', 'DANA', 'LinkAja'].map((b) => (
                       <option key={b} value={b}>{b}</option>
@@ -510,10 +514,8 @@ export default function Send() {
                 onChange={(e) => setRecipientAccount(e.target.value)}
                 placeholder={
                   ['GoPay', 'OVO', 'DANA'].includes(recipientBank)
-                    ? '08xxxxxxxxx'
-                    : recipientBank
-                      ? 'Enter account number'
-                      : 'Select bank first, then enter account number'
+                    ? 'Phone number *'
+                    : 'Account Number *'
                 }
                 className="w-full bg-surface-container-low border border-outline-variant rounded-xl p-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
@@ -534,7 +536,7 @@ export default function Send() {
                     setShowRecipientPicker(false);
                   }}
                   disabled={!recipientName || !recipientBank || !recipientAccount}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-primary press-effect disabled:opacity-40"
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-primary press-effect disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   ✓ Use This Recipient
                 </button>
@@ -544,13 +546,23 @@ export default function Send() {
         </div>{/* Generate Button */}
         <button
           onClick={handleGenerateLink}
-          disabled={!amount || numAmount <= 0 || isGenerating}
-          className="w-full bg-primary-container text-white py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg press-effect disabled:opacity-50"
+          disabled={!canGenerate}
+          className="w-full bg-primary-container text-white py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg press-effect disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {isGenerating ? (
             <>
               <Loader2 size={18} className="animate-spin" />
               Creating on Stellar...
+            </>
+          ) : !hasRecipient && numAmount > 0 ? (
+            <>
+              <Info size={18} />
+              Enter Recipient Details First
+            </>
+          ) : !amount || numAmount <= 0 ? (
+            <>
+              <Wand2 size={18} />
+              Enter Amount to Continue
             </>
           ) : (
             <>
@@ -559,6 +571,11 @@ export default function Send() {
             </>
           )}
         </button>
+        {!hasRecipient && numAmount > 0 && (
+          <p className="text-center text-[12px] text-on-surface-variant -mt-2">
+            Please fill in recipient details above to continue
+          </p>
+        )}
       </div>
 
       <BottomNav />
